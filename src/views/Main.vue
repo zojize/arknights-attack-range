@@ -61,6 +61,7 @@
           effect="dark"
         >
           <el-input
+            class="text-container"
             v-model="characters"
             placeholder
           ></el-input>
@@ -290,7 +291,6 @@ export default defineComponent({
         b = "⬇",
         l = "⬅",
       ] = this.characters.split(",");
-      for (const s of [blank, filled, t, r, b, l]) if (s.length > 6) return "";
       const dir = { t, r, b, l };
       const width = maxX - minX;
       const height = maxY - minY;
@@ -319,7 +319,7 @@ export default defineComponent({
 });
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .container {
   margin-top: 2vw;
 }
@@ -337,5 +337,12 @@ export default defineComponent({
     height: 100%;
     width: 100%;
   }
+}
+
+.text-container,
+.text-container > * {
+  font-family: apple color emoji, segoe ui emoji, noto color emoji,
+    android emoji, emojisymbols, emojione mozilla, twemoji mozilla,
+    segoe ui symbol;
 }
 </style>
