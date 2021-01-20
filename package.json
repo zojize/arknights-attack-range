@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vuedx-typecheck . && vite build"
+    "build": "vite build"
   },
   "dependencies": {
     "element-plus": "^1.0.1-beta.27",
