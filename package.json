@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "deploy": "sh scripts/deploy"
   },
   "dependencies": {
     "element-plus": "^1.0.1-beta.27",
