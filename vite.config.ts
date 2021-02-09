@@ -6,6 +6,6 @@ export default defineConfig({
   root: './',
   build: {
     assetsDir: "resources",
-    base: "./",
+    base: "/arknights-attack-range/",
   },
 });
