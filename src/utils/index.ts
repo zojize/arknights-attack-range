@@ -12,16 +12,16 @@ export class Vector {
 }
 
 enum Modes {
-  FILL = "f",
-  ALL = "a",
+  COVER = 'c',
+  FILL = 'f',
 }
 
 enum States {
-  NO_DIR = "n",
-  FRONT = "f",
-  LEFT = "l",
-  RIGHT = "r",
-  BACK = "b",
+  ALL = 'a',
+  FRONT = 'f',
+  LEFT = 'l',
+  RIGHT = 'r',
+  BACK = 'b',
 }
 
 export const Directions = {
@@ -34,18 +34,17 @@ export const Directions = {
 // [(init number)|mode] [tiles|(tile mode)+/-offset[&others]]+
 export function parseAttackRange(
   source: string,
-  {
-    charDir = "r",
-    evenOffset = -1,
-  }: { charDir: keyof typeof Directions; evenOffset?: number }
+  { charDir = 'r', evenOffset = -1 }: { charDir: keyof typeof Directions; evenOffset?: number },
 ): Array<Vector> {
   let result = [];
 
   let charDirection = Directions[charDir];
-  const sourceArr = source.split(" ").filter((i) => i);
-  let [, initRow = 0, state = States.FRONT] = sourceArr[0].match(
-    /([+-]?\d+)?([a-zA-Z])?/
-  ) as [unknown, string?, States?];
+  const sourceArr = source.split(' ').filter((i) => i);
+  let [, initRow = 0, state = States.FRONT] = sourceArr[0].match(/([+-]?\d+)?([a-zA-Z])?/) as [
+    unknown,
+    string?,
+    States?,
+  ];
   state = state?.toLowerCase() as States;
   if (sourceArr.length === 1) {
     state = States.FRONT;
@@ -74,11 +73,11 @@ export function parseAttackRange(
 
   for (const [i, exps] of sourceArr.entries()) {
     const idx = i + initRow;
-    for (const exp of exps.split("&")) {
+    for (const exp of exps.split('&')) {
       let [, row, shift = 0] = exp.match(/([a-zA-Z0-9]+)([+-][0-9]+)?/) as [
         unknown,
         string,
-        string?
+        string?,
       ];
       shift = -parseInt(shift as string);
       let rowCount: number;
@@ -88,13 +87,12 @@ export function parseAttackRange(
       if (rowCount === 0) continue;
       const even = !(rowCount & 1);
       // if (even) ++rowCount;
-      const start =
-        -((rowCount - 1) / 2) + shift + (even as any) * 0.5 * evenOffset;
+      const start = -((rowCount - 1) / 2) + shift + (even as any) * 0.5 * evenOffset;
       const jRow = charDirection.multScalar(idx);
 
-      const noDir = state === States.NO_DIR;
+      const all = state === States.ALL;
       for (let j = 0; j < rowCount; ++j) {
-        if (noDir) {
+        if (all) {
           const vec = jRow.addVector(charNormal.multScalar(j + start));
           result.push(vec);
           let temp = vec;
@@ -120,19 +118,13 @@ export function parseAttackRange(
 }
 
 function getRow(x: number, mode: Modes): number {
-  console.log("getrow", x, mode);
-
   x = Math.abs(x);
   if (x === 0) return 1;
-  if (mode === Modes.FILL) x -= 1;
+  if (mode === Modes.COVER) x -= 1;
   return 2 * x + 1;
 }
 
-export function map(
-  x: number,
-  from_: [number, number],
-  to: [number, number]
-): number {
+export function map(x: number, from_: [number, number], to: [number, number]): number {
   const [fMin, fMax] = from_;
   const [tMin, tMax] = to;
   return ((x - fMin) * (tMax - tMin)) / (fMax - fMin) + tMin;
@@ -146,27 +138,20 @@ export function clip(x: number, range: [number, number]): number {
 export class ValueError extends Error {
   constructor(...args: any[]) {
     super(...args);
-    this.name = "ValueError";
+    this.name = 'ValueError';
   }
 }
 
 export function range(end: number): IterableIterator<number>;
 export function range(start: number, end: number): IterableIterator<number>;
-export function range(
-  start: number,
-  end: number,
-  step: number
-): IterableIterator<number>;
+export function range(start: number, end: number, step: number): IterableIterator<number>;
 
-export function* range(
-  ...args: [number, number?, number?]
-): IterableIterator<number> {
+export function* range(...args: [number, number?, number?]): IterableIterator<number> {
   let [start, end, step = 1] = args;
   if (end === void 0) [end, start] = [start, 0];
   for (const n of [start, end, step])
-    if (!Number.isInteger(n))
-      throw new TypeError(`'${n}' cannot be interpreted as an integer`);
-  if (step === 0) throw new ValueError("range() arg 3 must not be zero");
+    if (!Number.isInteger(n)) throw new TypeError(`'${n}' cannot be interpreted as an integer`);
+  if (step === 0) throw new ValueError('range() arg 3 must not be zero');
   let return_;
   if (step > 0) return_ = (x: number) => x >= (end as number);
   else return_ = (x: number) => x <= (end as number);
