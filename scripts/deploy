@@ -1,3 +1,5 @@
 #!/usr/bin/env sh
 yarn build
+git add -A
+git commit -m "chore: deploy"
 git subtree push --prefix=dist origin gh-pages
