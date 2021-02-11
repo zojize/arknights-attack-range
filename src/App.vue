@@ -1,22 +1,15 @@
 <template>
-  <router-view></router-view>
+  <Main/>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import HelloWorld from "./components/HelloWorld.vue";
+import Main from "./views/Main.vue";
 
 export default defineComponent({
   name: "App",
   components: {
-    HelloWorld,
-  },
-  created() {
-    if (sessionStorage.redirect) {
-      const redirect = sessionStorage.redirect;
-      delete sessionStorage.redirect;
-      this.$router.push(redirect);
-    }
+    Main,
   },
 });
 </script>
