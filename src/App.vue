@@ -11,6 +11,13 @@ export default defineComponent({
   components: {
     HelloWorld,
   },
+  created() {
+    if (sessionStorage.redirect) {
+      const redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+      this.$router.push(redirect);
+    }
+  },
 });
 </script>
 
