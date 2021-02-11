@@ -86,6 +86,8 @@
     <el-row
       type="flex"
       justify="center"
+      :style="{cursor: 'pointer'}"
+      @click="onClickClipboard"
     >
       <el-col
         :span="6"
@@ -93,7 +95,6 @@
         v-if="svgMode"
       >
         <svg
-          ref="svg"
           :viewBox="svgViewBox.join(' ')"
           @mousewheel="handleScroll"
           xmlns="http://www.w3.org/2000/svg"
@@ -174,13 +175,20 @@
         v-else
       >{{rangeString}}</div>
     </el-row>
+    <input
+      type="text"
+      @v-model="shareLink"
+      style="display: none;"
+      ref="share"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref } from 'vue';
-import { parseAttackRange, Vector, map, clip, Directions } from '../utils';
-import { SVGPosition } from '../utils/svg';
+import { defineComponent, computed, ref } from "vue";
+import { parseAttackRange, Vector, map, clip, Directions } from "../utils";
+import { SVGPosition } from "../utils/svg";
+import { ElMessage } from "element-plus";
 
 function corners(pts: Vector[]) {
   let minX = Infinity;
@@ -204,11 +212,15 @@ function corners(pts: Vector[]) {
 export default defineComponent({
   setup() {
     const query = new URLSearchParams(window.location.search);
-    let input = ref(query.get('range') ?? '-3 3-1 1-3&1+1 1+2&1-3 1-2&1+3 1+2&1-3 1-3&1+1 3-1');
-    const dirChinese = ref('右' as '右' | '左' | '上' | '下');
-    const dir = computed(() => ({ 右: 'r', 左: 'l', 上: 't', 下: 'b' }[dirChinese.value]));
+    let input = ref(
+      query.get("range") ?? "-3 3-1 1-3&1+1 1+2&1-3 1-2&1+3 1+2&1-3 1-3&1+1 3-1"
+    );
+    const dirChinese = ref("右" as "右" | "左" | "上" | "下");
+    const dir = computed(
+      () => ({ 右: "r", 左: "l", 上: "t", 下: "b" }[dirChinese.value])
+    );
 
-    const docs = '请输入内容';
+    const docs = "请输入内容";
     const evenOffset = ref(true);
 
     const range = computed(() => {
@@ -231,17 +243,41 @@ export default defineComponent({
     };
     helper();
     const maskY = ref(Object.keys([...Array(10)]).map((i) => +i * 0.2));
-    const characters = ref(query.get('chars') ?? '⬜,🟧,⬆,➡,⬇,⬅');
+    const characters = ref(query.get("chars") ?? "⬜,🟧,⬆,➡,⬇,⬅");
+    const svgMode = ref((query.get("mode") ?? "svg") === "svg");
+    const shareLink = computed(() => {
+      const q = new URLSearchParams();
+      q.set("mode", svgMode.value ? "svg" : "text");
+      q.set("range", input.value);
+      q.set("chars", characters.value);
+      return location.origin + location.pathname + "?" + String(q);
+    });
+    const onClickClipboard = () => {
+      navigator.clipboard
+        .writeText(shareLink.value)
+        .then(() => {
+          ElMessage({
+            message: "已复制分享链接到剪贴板",
+            showClose: true,
+            type: "success",
+          });
+        })
+        .catch(() => {
+          ElMessage({ message: "复制失败", showClose: true, type: "error" });
+        });
+    };
 
     return {
       docs,
       range,
       input,
       dir,
+      onClickClipboard,
       width: ref(1),
       height: ref(1),
       svgAspectRatio: ref([10, 10]),
-      svgMode: ref((query.get('mode') ?? 'svg') === 'svg'),
+      svgMode,
+      shareLink,
       dirChinese,
       maskY,
       characters,
@@ -255,7 +291,7 @@ export default defineComponent({
       svgAspectRatio: [10, 10],
       width: 1,
       height: 1,
-      dir: 'r' as keyof typeof Directions,
+      dir: "r" as keyof typeof Directions,
       svgMode: true,
     };
   },
@@ -269,13 +305,13 @@ export default defineComponent({
     },
     angle: function (direction: keyof typeof Directions): number {
       switch (direction) {
-        case 'r':
+        case "r":
           return 0;
-        case 'b':
+        case "b":
           return 90;
-        case 't':
+        case "t":
           return -90;
-        case 'l':
+        case "l":
           return 180;
       }
     },
@@ -286,20 +322,20 @@ export default defineComponent({
       return [...center, ...this.svgAspectRatio];
     },
     rangeString(): string {
-      if (!this.range.length) return '';
+      if (!this.range.length) return "";
       const points = [...this.range];
 
       const { minX, minY, maxX, maxY } = corners(points);
       let result = [];
       // characters: "⬜,🟧,⬆,➡,⬇,⬅",
       const [
-        blank = '⬜',
-        filled = '🟧',
-        t = '⬆',
-        r = '➡',
-        b = '⬇',
-        l = '⬅',
-      ] = this.characters.split(',');
+        blank = "⬜",
+        filled = "🟧",
+        t = "⬆",
+        r = "➡",
+        b = "⬇",
+        l = "⬅",
+      ] = this.characters.split(",");
       const dir = { t, r, b, l };
       const width = maxX - minX;
       const height = maxY - minY;
@@ -338,7 +374,7 @@ export default defineComponent({
       }
       chars[-minY][-minX] = dir[this.dir];
 
-      const str = chars.map((arr) => arr.join('')).join('\n');
+      const str = chars.map((arr) => arr.join("")).join("\n");
 
       return str;
     },
@@ -347,8 +383,8 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
-$emoji: apple color emoji, segoe ui emoji, noto color emoji, android emoji, emojisymbols,
-  emojione mozilla, twemoji mozilla, segoe ui symbol;
+$emoji: apple color emoji, segoe ui emoji, noto color emoji, android emoji,
+  emojisymbols, emojione mozilla, twemoji mozilla, segoe ui symbol;
 
 .container {
   margin-top: 2vw;
