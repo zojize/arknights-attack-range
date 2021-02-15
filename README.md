@@ -20,14 +20,14 @@ commands   -> multCmd whitespace commands
 commands   -> multCmd
 multCmd    -> cmdGroup '*' posInteger
 multCmd    -> cmdGroup
-cmdGroup   -> cmd:offsetCmd '&' g:cmdGroup
+cmdGroup   -> cmd:offsetCmd '&' cmdGroup
 cmdGroup   -> offsetCmd
-offsetCmd  -> cmd_or_i s:sign offset:integer
+offsetCmd  -> cmd_or_i sign integer
 offsetCmd  -> cmd_or_i
 
 sign       -> [+-]
 cmd_or_i   -> command / posInteger
-command    -> m:[FCfc]
+command    -> [FCfc]
 modes      -> [+-]? modes:mode+
 mode       -> [FLRBAflrba]
 posInteger -> [+]*[0-9]+
