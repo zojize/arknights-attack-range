@@ -30,7 +30,7 @@ cmd_or_i   -> command / posInteger
 command    -> [FCfc]
 modes      -> [+-]? modes:mode+
 mode       -> [FLRBAflrba]
-posInteger -> [+]*[0-9]+
-integer    -> [+-]*[0-9]+
+posInteger -> [+]?[0-9]+
+integer    -> [+-]?[0-9]+
 whitespace -> ' '
 ```

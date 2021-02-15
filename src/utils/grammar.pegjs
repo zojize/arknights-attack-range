@@ -39,9 +39,9 @@ modes
 mode
     = s:[FLRBAflrba] { return s.toLowerCase() }
 posInteger
-    = [+]*[0-9]+ { return Number(text()) }
+    = [+]?[0-9]+ { return Number(text()) }
 integer
-    = [+-]*[0-9]+ { return Number(text()) }
+    = [+-]?[0-9]+ { return Number(text()) }
 _ 'whitespace'
 	= [ \t\n\r]*
 
