@@ -182,7 +182,7 @@
       <el-alert
         :title="error ? 'SyntaxError' : '解析成功'"
         :type="error ? 'error' : 'success'"
-        :description="error ? errorMsg : ''"
+        :description="errorMsg"
         :closable="false"
         :center="false"
         show-icon
@@ -193,11 +193,19 @@
 
 <script lang="ts">
 import { defineComponent, computed, ref } from "vue";
-import { Vector, map, clip, Directions } from "../utils";
+import { map, clip } from "../utils";
 import * as parser from "../utils/parser";
 import { ElMessage } from "element-plus";
+import Vector2 from "../utils/Vector2";
 
-function corners(pts: Vector[]) {
+const directions = {
+  r: Vector2.RIGHT.copy(),
+  l: Vector2.LEFT.copy(),
+  t: Vector2.TOP.copy(),
+  b: Vector2.BOTTOM.copy(),
+} as const;
+
+function corners(pts: Vector2[]) {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -235,18 +243,13 @@ export default defineComponent({
 
     const range = computed(() => {
       const ret = parser.load(input.value, {
-        charDir: dir.value as keyof typeof Directions,
+        charDir: dir.value as keyof typeof directions,
         evenOffset: evenOffset.value ? 0 : -1,
       });
       let { points = [] } = ret;
-      if (!ret.points) {
-        error.value = true;
+      error.value = !ret.points;
         errorMsg.value = ret.message;
-      } else {
-        error.value = false;
-      }
-
-      return points.length < 2000 ? points : [{ x: 0, y: 0 }];
+      return points.length < 2000 ? points : [new Vector2()];
     });
 
     const t = ref(0);
@@ -313,7 +316,7 @@ export default defineComponent({
       svgAspectRatio: [10, 10],
       width: 1,
       height: 1,
-      dir: "r" as keyof typeof Directions,
+      dir: "r" as keyof typeof directions,
       svgMode: true,
     };
   },
@@ -324,7 +327,7 @@ export default defineComponent({
         return clip(n + map(-dy, [-200, 200], [-1, 1]), [5, 50]);
       });
     },
-    angle: function (direction: keyof typeof Directions): number {
+    angle: function (direction: keyof typeof directions): number {
       switch (direction) {
         case "r":
           return 0;
