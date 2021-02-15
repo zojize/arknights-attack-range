@@ -5,32 +5,32 @@
 
 ## 语法
 
-```pegjs
+```txt
 # 详见 src/utils/grammar.pegjs
 
-expr -> init whitespace commands
-expr -> commands
+expr       -> init whitespace commands
+expr       -> commands
 
-init -> modes offset:integer
-init -> integer modes
-init -> integer
-init -> modes
+init       -> modes offset:integer
+init       -> integer modes
+init       -> integer
+init       -> modes
 
-commands -> multCmd whitespace commands
-commands -> multCmd
-multCmd -> cmdGroup '*' posInteger
-multCmd -> cmdGroup
-cmdGroup -> cmd:offsetCmd '&' g:cmdGroup
-cmdGroup -> offsetCmd
-offsetCmd -> cmd_or_i s:sign offset:integer
-offsetCmd -> cmd_or_i
+commands   -> multCmd whitespace commands
+commands   -> multCmd
+multCmd    -> cmdGroup '*' posInteger
+multCmd    -> cmdGroup
+cmdGroup   -> cmd:offsetCmd '&' g:cmdGroup
+cmdGroup   -> offsetCmd
+offsetCmd  -> cmd_or_i s:sign offset:integer
+offsetCmd  -> cmd_or_i
 
-sign -> [+-]
-cmd_or_i -> command / posInteger
-command -> m:[FCfc]
-modes -> [+-]? modes:mode+
-mode -> [FLRBAflrba]
+sign       -> [+-]
+cmd_or_i   -> command / posInteger
+command    -> m:[FCfc]
+modes      -> [+-]? modes:mode+
+mode       -> [FLRBAflrba]
 posInteger -> [+]*[0-9]+
-integer -> [+-]*[0-9]+
+integer    -> [+-]*[0-9]+
 whitespace -> ' '
 ```
