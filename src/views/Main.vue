@@ -62,7 +62,7 @@
           <el-checkbox
             v-model="evenOffset"
             border
-          >{{evenOffset ? 1 : -1}}</el-checkbox>
+          >{{evenOffset ? 0 : -1}}</el-checkbox>
         </el-tooltip>
       </el-col>
       <el-col
@@ -86,19 +86,18 @@
     <el-row
       type="flex"
       justify="center"
-      :style="{cursor: 'pointer'}"
-      @click="onClickClipboard"
     >
       <el-col
         :span="6"
         class="svg-container"
-        v-if="svgMode"
       >
         <svg
           :viewBox="svgViewBox.join(' ')"
-          @mousewheel="handleScroll"
+          @mousewheel.prevent="handleScroll"
           xmlns="http://www.w3.org/2000/svg"
-          style="width: 50vw; height: 50vw; max-height: 80vh;"
+          style="width: 50vw; height: 50vw; max-height: 80vh; cursor: pointer;"
+          @click="onClickClipboard"
+          v-if="svgMode"
         >
           <mask
             id="stripe"
@@ -168,26 +167,34 @@
             />
           </g>
         </svg>
+        <div
+          class="text-container"
+          @click="onClickClipboard"
+          style="line-height: 1.1em; white-space: pre; margin: 20px 0;"
+          v-else
+        >{{rangeString}}</div>
       </el-col>
-      <div
-        class="text-container"
-        style="line-height: 1.1em; white-space: pre; margin: 20px 0;"
-        v-else
-      >{{rangeString}}</div>
     </el-row>
-    <input
-      type="text"
-      @v-model="shareLink"
-      style="display: none;"
-      ref="share"
-    />
+    <el-row
+      type="flex"
+      justify="center"
+    >
+      <el-alert
+        :title="error ? 'SyntaxError' : '解析成功'"
+        :type="error ? 'error' : 'success'"
+        :description="error ? errorMsg : ''"
+        :closable="false"
+        :center="false"
+        show-icon
+      ></el-alert>
+    </el-row>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, computed, ref } from "vue";
-import { parseAttackRange, Vector, map, clip, Directions } from "../utils";
-import { SVGPosition } from "../utils/svg";
+import { Vector, map, clip, Directions } from "../utils";
+import * as parser from "../utils/parser";
 import { ElMessage } from "element-plus";
 
 function corners(pts: Vector[]) {
@@ -212,28 +219,34 @@ function corners(pts: Vector[]) {
 export default defineComponent({
   setup() {
     const query = new URLSearchParams(window.location.search);
-    let input = ref(
-      query.get("range") ?? "-3 3-1 1-3&1+1 1+2&1-3 1-2&1+3 1+2&1-3 1-3&1+1 3-1"
-    );
+    const defaultInput = "-3 3+1 1+3&1-1 1+3&1-2 1-3&1+2 1+3&1-2 1+3&1-1 3+1";
+    let input = ref(query.get("range") ?? defaultInput);
     const dirChinese = ref("右" as "右" | "左" | "上" | "下");
     const dir = computed(
-      () => ({ 右: "r", 左: "l", 上: "t", 下: "b" }[dirChinese.value])
+      () =>
+        query.get("dir") ??
+        { 右: "r", 左: "l", 上: "t", 下: "b" }[dirChinese.value]
     );
+    const error = ref(false);
 
     const docs = "请输入内容";
     const evenOffset = ref(true);
+    const errorMsg = ref("");
 
     const range = computed(() => {
-      let ret: any[];
-      try {
-        ret = parseAttackRange(input.value, {
-          charDir: dir.value as keyof typeof Directions,
-          evenOffset: evenOffset.value ? 1 : -1,
-        });
-      } catch (error) {
-        ret = [];
+      const ret = parser.load(input.value, {
+        charDir: dir.value as keyof typeof Directions,
+        evenOffset: evenOffset.value ? 0 : -1,
+      });
+      let { points = [] } = ret;
+      if (!ret.points) {
+        error.value = true;
+        errorMsg.value = ret.message;
+      } else {
+        error.value = false;
       }
-      return ret.length < 1000 ? ret : [{ x: 0, y: 0 }];
+
+      return points.length < 2000 ? points : [{ x: 0, y: 0 }];
     });
 
     const t = ref(0);
@@ -250,6 +263,7 @@ export default defineComponent({
       q.set("mode", svgMode.value ? "svg" : "text");
       q.set("range", input.value);
       q.set("chars", characters.value);
+      q.set("dir", dir.value);
       return location.origin + location.pathname + "?" + String(q);
     });
     const onClickClipboard = () => {
@@ -260,10 +274,16 @@ export default defineComponent({
             message: "已复制分享链接到剪贴板",
             showClose: true,
             type: "success",
+            duration: 1000,
           });
         })
         .catch(() => {
-          ElMessage({ message: "复制失败", showClose: true, type: "error" });
+          ElMessage({
+            duration: 1000,
+            message: "复制失败",
+            showClose: true,
+            type: "error",
+          });
         });
     };
 
@@ -283,6 +303,8 @@ export default defineComponent({
       characters,
       evenOffset,
       t,
+      errorMsg,
+      error,
     };
   },
   data() {
@@ -297,7 +319,6 @@ export default defineComponent({
   },
   methods: {
     handleScroll(e: WheelEvent): void {
-      e.preventDefault();
       const { deltaY: dy } = e;
       this.svgAspectRatio = this.svgAspectRatio.map((n) => {
         return clip(n + map(-dy, [-200, 200], [-1, 1]), [5, 50]);
@@ -339,32 +360,13 @@ export default defineComponent({
       const dir = { t, r, b, l };
       const width = maxX - minX;
       const height = maxY - minY;
-      // for (let y = minY; y <= maxY; y++) {
-      //   for (let x = minX; x <= maxX; x++)
-      //     if (x === 0 && y === 0) result.push(dir[this.dir]);
-      //     else {
-      //       let flag = true;
-      //       for (let i = 0; i < points.length; i++) {
-      //         const pt = points[i];
-      //         if (pt.x === x && pt.y === y) {
-      //           result.push(filled);
-      //           points.splice(i, 1);
-      //           flag = false;
-      //           break;
-      //         }
-      //       }
-      //       if (flag) result.push(blank.replaceAll(' ', '&nbsp;'));
-      //     }
-      //   result.push('\n');
-      // }
 
       const chars: string[][] = [];
       for (let y = minY; y <= maxY; y++) {
         const arr: string[] = [];
         chars.push(arr);
         for (let x = minX; x <= maxX; x++) {
-          if (x || y) arr.push(blank);
-          else arr.push(dir[this.dir]);
+          arr.push(blank);
         }
       }
 
@@ -405,6 +407,7 @@ $emoji: apple color emoji, segoe ui emoji, noto color emoji, android emoji,
     border: 1px pink solid;
     height: 100%;
     width: 100%;
+    cursor: pointer;
   }
 }
 
@@ -415,6 +418,7 @@ $emoji: apple color emoji, segoe ui emoji, noto color emoji, android emoji,
 .text-container,
 .text-container > * {
   line-height: 1.1em;
+  cursor: pointer;
   white-space: pre;
   margin: 20px 0;
   font-family: $emoji;
